@@ -170,33 +170,20 @@ export default function MeditatePage() {
     };
 
     const playSilence = async (seconds: number) => {
-        await ensureAudioContext();
-        const ctx = audioContextRef.current;
-        if (!ctx) {
-            return new Promise<void>((resolve) => setTimeout(resolve, Math.max(1, Math.round(seconds * 1000))));
-        }
-        const sr = ctx.sampleRate;
-        const sec = Math.max(0.05, seconds);
-        const length = Math.max(1, Math.floor(sr * sec));
-        const buffer = ctx.createBuffer(1, length, sr);
-        const source = ctx.createBufferSource();
-        source.buffer = buffer;
-        source.connect(ctx.destination);
+        const url = createSilenceWavURL(seconds);
+        const audio = new Audio(url);
+        (audio as any).playsInline = true;
+        audio.preload = 'auto';
         return new Promise<void>((resolve) => {
-            let done = false;
-            const watchdog = setTimeout(() => {
-                if (done) return;
-                done = true;
-                try { source.stop(); } catch { }
-                resolve();
-            }, Math.max(100, Math.round(sec * 1000 + 250)));
-            source.onended = () => {
-                if (done) return;
-                done = true;
-                clearTimeout(watchdog);
+            audio.onended = () => {
+                URL.revokeObjectURL(url);
                 resolve();
             };
-            source.start();
+            audio.onerror = () => {
+                URL.revokeObjectURL(url);
+                resolve();
+            };
+            audio.play().catch(() => resolve());
         });
     };
 
@@ -379,22 +366,21 @@ export default function MeditatePage() {
     useEffect(() => {
         const onVisibility = async () => {
             if (document.hidden) {
-                if (currentAudio) currentAudio.pause();
-                if (currentSourceRef.current) {
-                    try { currentSourceRef.current.stop(); } catch { }
-                    currentSourceRef.current = null;
-                }
-                setShowAudioHint(true);
-            } else {
-                setShowAudioHint(true);
-                if (wakeLockActiveRef.current) {
+                if (!wakeLockActiveRef.current) {
                     try { await requestWakeLock(); } catch { }
+                }
+                setShowAudioHint(false);
+            } else {
+                setShowAudioHint(false);
+                try { await ensureAudioContext(); } catch { }
+                if (currentAudio && isPlaying && currentAudio.paused) {
+                    try { await currentAudio.play(); } catch { }
                 }
             }
         };
         document.addEventListener('visibilitychange', onVisibility);
         return () => document.removeEventListener('visibilitychange', onVisibility);
-    }, [currentAudio]);
+    }, [currentAudio, isPlaying]);
 
     useEffect(() => {
         (async () => {
@@ -557,20 +543,12 @@ export default function MeditatePage() {
                         const durationMatch = token.match(/(\d+)/);
                         if (durationMatch) {
                             const dur = parseInt(durationMatch[1]);
-                            if (isIOSPlatform()) {
-                                const url = createSilenceWavURL(dur);
-                                setAudioQueue(prev => [...prev, {
-                                    type: 'audio',
-                                    url,
-                                    id: Math.random().toString(36).substr(2, 9)
-                                }]);
-                            } else {
-                                setAudioQueue(prev => [...prev, {
-                                    type: 'pause',
-                                    duration: dur,
-                                    id: Math.random().toString(36).substr(2, 9)
-                                }]);
-                            }
+                            const url = createSilenceWavURL(dur);
+                            setAudioQueue(prev => [...prev, {
+                                type: 'audio',
+                                url,
+                                id: Math.random().toString(36).substr(2, 9)
+                            }]);
                         }
                     } else if (token.includes("rate")) {
                         const rateMatch = token.match(/([+-]?\d+%)/);
@@ -587,37 +565,19 @@ export default function MeditatePage() {
 
                         // Add natural pause based on punctuation type
                         if (token.match(/[.!?。！？\n]+/)) {
-                            // Sentence ending: longer pause
-                            if (isIOSPlatform()) {
-                                const url = createSilenceWavURL(1.2);
-                                setAudioQueue(prev => [...prev, {
-                                    type: 'audio',
-                                    url,
-                                    id: Math.random().toString(36).substr(2, 9)
-                                }]);
-                            } else {
-                                setAudioQueue(prev => [...prev, {
-                                    type: 'pause',
-                                    duration: 1.2,
-                                    id: Math.random().toString(36).substr(2, 9)
-                                }]);
-                            }
+                            const url = createSilenceWavURL(1.2);
+                            setAudioQueue(prev => [...prev, {
+                                type: 'audio',
+                                url,
+                                id: Math.random().toString(36).substr(2, 9)
+                            }]);
                         } else if (token.match(/[,，]+/)) {
-                            // Comma: short pause
-                            if (isIOSPlatform()) {
-                                const url = createSilenceWavURL(0.4);
-                                setAudioQueue(prev => [...prev, {
-                                    type: 'audio',
-                                    url,
-                                    id: Math.random().toString(36).substr(2, 9)
-                                }]);
-                            } else {
-                                setAudioQueue(prev => [...prev, {
-                                    type: 'pause',
-                                    duration: 0.4,
-                                    id: Math.random().toString(36).substr(2, 9)
-                                }]);
-                            }
+                            const url = createSilenceWavURL(0.4);
+                            setAudioQueue(prev => [...prev, {
+                                type: 'audio',
+                                url,
+                                id: Math.random().toString(36).substr(2, 9)
+                            }]);
                         }
                     }
                 }
