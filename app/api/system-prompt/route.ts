@@ -1,9 +1,12 @@
 import { cookies } from "next/headers";
+import { ensureTables, hasDb } from "@/lib/db";
 import { sql } from "@vercel/postgres";
-import { ensureTables } from "@/lib/db";
 
 export async function GET() {
   try {
+    if (!hasDb()) {
+      return new Response("", { status: 200, headers: { "Content-Type": "text/plain; charset=utf-8" } });
+    }
     await ensureTables();
     const jar = cookies();
     let uid = jar.get("uid")?.value || "";
@@ -22,6 +25,7 @@ export async function GET() {
 
 export async function POST(req: Request) {
   try {
+    if (!hasDb()) return new Response("ok", { status: 200 });
     await ensureTables();
     const jar = cookies();
     let uid = jar.get("uid")?.value || "";

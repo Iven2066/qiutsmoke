@@ -5,6 +5,9 @@ export const metadata: Metadata = {
   title: "Rain - Meditation App",
   description: "Quit smoking and find peace with AI-guided meditation.",
   manifest: "/manifest.json",
+};
+
+export const viewport = {
   themeColor: "#0f172a",
 };
 

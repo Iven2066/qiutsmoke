@@ -87,6 +87,11 @@ export default function MeditatePage() {
         const savedKey = localStorage.getItem("deepseek_api_key");
         if (savedKey) setApiKey(savedKey);
 
+        try {
+            const g = localStorage.getItem("global_system_prompt");
+            if (g) setGlobalSystemPrompt(g);
+        } catch {}
+
         (async () => {
             try {
                 const res = await fetch('/api/prompts');
@@ -101,7 +106,10 @@ export default function MeditatePage() {
                 const res = await fetch('/api/system-prompt');
                 if (res.ok) {
                     const text = await res.text();
-                    setGlobalSystemPrompt(text || "");
+                    if (text && text.trim().length > 0) {
+                        setGlobalSystemPrompt(text);
+                        try { localStorage.setItem("global_system_prompt", text); } catch {}
+                    }
                 }
             } catch {}
         })();
@@ -114,7 +122,10 @@ export default function MeditatePage() {
         try {
             localStorage.setItem("meditation_prompts", JSON.stringify(editedPrompts));
         } catch {}
-    }, [customPrompt, apiKey, editedPrompts]);
+        try {
+            localStorage.setItem("global_system_prompt", globalSystemPrompt);
+        } catch {}
+    }, [customPrompt, apiKey, editedPrompts, globalSystemPrompt]);
 
     // Audio Queue Management
     type QueueItem =
@@ -846,7 +857,7 @@ export default function MeditatePage() {
                                 />
                                 <div className="flex justify-end">
                                     <button
-                                        onClick={() => { try { fetch('/api/system-prompt', { method: 'POST', body: globalSystemPrompt }); } catch {} }}
+                                        onClick={() => { try { localStorage.setItem("global_system_prompt", globalSystemPrompt); fetch('/api/system-prompt', { method: 'POST', body: globalSystemPrompt }); } catch {} }}
                                         className="px-3 py-1.5 bg-white/10 rounded-full text-slate-200 hover:bg-white/20 transition-colors"
                                     >保存全局</button>
                                 </div>

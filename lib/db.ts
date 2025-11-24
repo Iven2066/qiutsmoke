@@ -1,5 +1,12 @@
 import { sql } from "@vercel/postgres";
 
+export function hasDb() {
+  return Boolean(
+    process.env.POSTGRES_URL ||
+    process.env.POSTGRES_URL_NON_POOLING ||
+    process.env.POSTGRES_HOST
+  );
+}
 export async function ensureTables() {
   await sql`CREATE TABLE IF NOT EXISTS users (id text PRIMARY KEY, created_at timestamptz DEFAULT now())`;
   await sql`CREATE TABLE IF NOT EXISTS user_settings (

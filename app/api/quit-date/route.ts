@@ -1,9 +1,10 @@
 import { cookies } from "next/headers";
+import { ensureTables, hasDb } from "@/lib/db";
 import { sql } from "@vercel/postgres";
-import { ensureTables } from "@/lib/db";
 
 export async function GET() {
   try {
+    if (!hasDb()) return new Response(JSON.stringify({ quitDate: null }), { status: 200, headers: { "Content-Type": "application/json" } });
     await ensureTables();
     const jar = cookies();
     let uid = jar.get("uid")?.value || "";
@@ -22,6 +23,7 @@ export async function GET() {
 
 export async function POST(req: Request) {
   try {
+    if (!hasDb()) return new Response(JSON.stringify({ ok: true }), { status: 200, headers: { "Content-Type": "application/json" } });
     await ensureTables();
     const jar = cookies();
     let uid = jar.get("uid")?.value || "";
