@@ -1,3 +1,4 @@
+export const runtime = 'edge';
 import { EdgeTTS } from "node-edge-tts";
 import os from "os";
 import path from "path";
