@@ -61,7 +61,7 @@
     "electron": "^39.2.3",
     "electron-builder": "^26.0.12",
     "eslint": "^9",
-    "eslint-config-next": "16.0.3",
+    "eslint-config-next": "latest",
     "tailwindcss": "^4",
     "typescript": "^5"
   }
