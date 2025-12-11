@@ -1,4 +1,5 @@
 export const runtime = 'edge';
+export const dynamic = 'force-dynamic';
 import { EdgeTTS } from "node-edge-tts";
 import os from "os";
 import path from "path";
